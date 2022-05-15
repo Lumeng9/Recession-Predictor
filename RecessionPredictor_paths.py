@@ -6,7 +6,7 @@ import datetime as dt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))   
 
-fred_api_key = ''
+fred_api_key = 'bb95888f45b1419fcbdb0328a607b7f2'
 now = dt.datetime.now()
 month = now.strftime('%m')
 year = now.year
@@ -20,7 +20,7 @@ data_secondary = (str(os.getcwd()) +
                   '\\data\\interim\\secondary_dataset_v{}_{}_01.json'.format(year, month))
 data_secondary_most_recent = (str(os.getcwd()) +
                               '\\data\\interim\\secondary_dataset_most_recent.json')
-data_final = (str(os.getcwd()) + '\\data\\processed\\final_dataset.json')
+data_final = (str(os.getcwd()) + '\\data\\processed\\final_dataset.csv')
 exploratory_plots = (str(os.getcwd()) + '\\reports\\figures\\exploratory.pdf')
 test_results_plots = (str(os.getcwd()) + '\\reports\\figures\\test_results.pdf')
 deployment_results_plots = (str(os.getcwd()) + '\\reports\\figures\\deployment_results.pdf')

@@ -4,7 +4,6 @@ This is the main script that runs all modules.
 
 import os
 import argparse
-import datetime as dt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__))) 
 import src.data.make_dataset as mk
@@ -15,38 +14,34 @@ import src.visualization.test_results as test_results
 import src.models.deployment as deploy
 import src.visualization.deployment_results as deploy_results
 
+#
+# parser = argparse.ArgumentParser()
+# parser.add_argument('process', type=str,
+#                     default='deploy',
+#                     help=
+#                     """
+#                     Which process would you like to run? Choices are "backtest"
+#                     or "deploy".
+#                     """,
+#                     choices=['backtest', 'deploy'])
+# args = parser.parse_args()
+process = 'deploy'
 
-now = dt.datetime.now()
-month = now.strftime('%m')
-year = now.year
-
-if now.day < 8:
-    raise Exception("""
-                    Invalid date. Please run this program on or after
-                    the 8th calendar day of the current month.
-                    """)
-    
-parser = argparse.ArgumentParser()
-parser.add_argument('process', type=str,
-                    help=
-                    """
-                    Which process would you like to run? Choices are "backtest"
-                    or "deploy".
-                    """,
-                    choices=['backtest', 'deploy'])
-args = parser.parse_args()
-process = args.process
+# please choose between 'T10Y2Y' and 'T10Y3M'
+series_key = 'T10Y2Y'
 
 if process == 'backtest':
-   get_data = mk.MakeDataset().get_all_data()
-   build_features = ft.FinalizeDataset().create_final_dataset()
+   data = mk.MakeDataset().get_all_data(series_key)
+   fd = ft.FinalizeDataset(data)
+   fd.create_final_dataset()
    explore_data = exp.ExploratoryAnalysis().explore_dataset()
    backtest = test.Backtester().run_test_procedures()
    plot_backtest = test_results.TestResultPlots().plot_test_results()
     
 elif process == 'deploy':
-   get_data = mk.MakeDataset().get_all_data()
-   build_features = ft.FinalizeDataset().create_final_dataset()
+   data = mk.MakeDataset().get_all_data(series_key)
+   fd = ft.FinalizeDataset(data)
+   fd.create_final_dataset()
    deploy = deploy.Deployer().run_test_procedures()
    plot_deploy = deploy_results.TestResultPlots().plot_test_results()
    
