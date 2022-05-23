@@ -3,7 +3,9 @@ This is the main script that runs all modules.
 """
 
 import os
-import argparse
+import pandas as pd
+import RecessionPredictor_paths as path
+
 
 os.chdir(os.path.dirname(os.path.abspath(__file__))) 
 import src.data.make_dataset as mk
@@ -11,7 +13,7 @@ import src.features.build_features_and_labels as ft
 import src.visualization.exploratory_analysis as exp
 import src.models.testing as test
 import src.visualization.test_results as test_results
-import src.models.deployment as deploy
+from src.models.deployment import Deployer
 import src.visualization.deployment_results as deploy_results
 
 #
@@ -33,7 +35,7 @@ series_key = 'T10Y2Y'
 if process == 'backtest':
    data = mk.MakeDataset().get_all_data(series_key)
    fd = ft.FinalizeDataset(data)
-   fd.create_final_dataset()
+   df = fd.create_final_dataset()
    explore_data = exp.ExploratoryAnalysis().explore_dataset()
    backtest = test.Backtester().run_test_procedures()
    plot_backtest = test_results.TestResultPlots().plot_test_results()
@@ -41,9 +43,11 @@ if process == 'backtest':
 elif process == 'deploy':
    data = mk.MakeDataset().get_all_data(series_key)
    fd = ft.FinalizeDataset(data)
-   fd.create_final_dataset()
-   deploy = deploy.Deployer().run_test_procedures()
-   plot_deploy = deploy_results.TestResultPlots().plot_test_results()
+   df = fd.create_final_dataset()
+   dd = Deployer(df)
+   dd.run_test_procedures()
+   # plot_deploy = deploy_results.TestResultPlots().plot_test_results()
+   result = pd.read_json(path.deployment_svm_test_results)
    
 
 #MIT License

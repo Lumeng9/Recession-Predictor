@@ -18,7 +18,6 @@ class DataSeries:
     Contains methods and objects to retrieve data from FRED and Yahoo Finance.
     """
     
-    
     def __init__(self):
         self.dates = []
         self.values = []
@@ -88,6 +87,8 @@ class MakeDataset:
         preliminary manipulations before saving the data.
         """
         out_df = self.get_primary_data(series_key)
+        # Fill NaN value with the mean of the previous and the next row
+        out_df = out_df.interpolate()
         return out_df
 
 

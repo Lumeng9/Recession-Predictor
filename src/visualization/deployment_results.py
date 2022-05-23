@@ -14,17 +14,13 @@ class TestResultPlots:
     """
     The manager class for this module.
     """
-    
-    
+
     def __init__(self):
         """
         prediction_names: used to re-label chart data
         """
         self.pdf_object = ''
-        self.prediction_names = {'Pred_Recession_within_6mo': 'Within 6 Months',
-                                 'Pred_Recession_within_12mo': 'Within 12 Months',
-                                 'Pred_Recession_within_24mo': 'Within 24 Months',
-                                 'True_Recession': 'Recession'}
+        self.prediction_names = {'Pred_Recession_within_12mo': 'Within 12 Months'}
     
     
     def exponential_smoother(self, raw_data, half_life):
@@ -61,11 +57,7 @@ class TestResultPlots:
         """
         Performs exponential smoothing on specific columns of the dataframe.
         """
-        dataframe['Within 6 Months'] = self.exponential_smoother(raw_data=dataframe['Within 6 Months'],
-                                                                 half_life=3)
         dataframe['Within 12 Months'] = self.exponential_smoother(raw_data=dataframe['Within 12 Months'],
-                                                                  half_life=3)
-        dataframe['Within 24 Months'] = self.exponential_smoother(raw_data=dataframe['Within 24 Months'],
                                                                   half_life=3)
         return(dataframe)
     
@@ -83,42 +75,20 @@ class TestResultPlots:
         dataframe.rename(columns=self.prediction_names, inplace=True)
         if exponential == True:
             dataframe = self.exponential_conversion(dataframe=dataframe)
-        is_recession = dataframe['Recession'] == 1
-        is_not_recession = dataframe['Recession'] == 0
-        dataframe.loc[is_recession, 'Recession'] = 100
-        dataframe.loc[is_not_recession, 'Recession'] = -1
-        dataframe = dataframe[['Dates'] + list(self.prediction_names.values())]
+        is_recession = dataframe['Recession_in_12mo'] == 1
+        is_not_recession = dataframe['Recession_in_12mo'] == 0
+        dataframe.loc[is_recession, 'Recession_in_12mo'] = 100
+        dataframe.loc[is_not_recession, 'Recession_in_12mo'] = -1
+        dataframe = dataframe[['date'] + list(self.prediction_names.values())]
         
         plt.figure(figsize=(15, 5))
         plot = sns.lineplot(x='Dates', y='value', hue='variable',
-                            data=pd.melt(dataframe, ['Dates']))
+                            data=pd.melt(dataframe, ['date']))
         plot.set_ylabel('Probability')
         plot.set_title(name, fontsize = 20)
         plot.set_ylim((0, 1))
         self.pdf_object.savefig()
-            
-    
-    def create_chart_data(self, dataframe):
-        """
-        Reformats data so that it can be uploaded to Visualizer (Wordpress library).
-        """
-        dataframe.rename(columns=self.prediction_names, inplace=True)
-        dataframe = self.exponential_conversion(dataframe=dataframe)
-        is_recession = dataframe['Recession'] == 1
-        is_not_recession = dataframe['Recession'] == 0
-        dataframe.loc[is_recession, 'Recession'] = 100
-        dataframe.loc[is_not_recession, 'Recession'] = -1
-        dataframe = dataframe[['Dates'] + list(self.prediction_names.values())]
-        
-        chart_data = pd.DataFrame({
-                                   'Dates': ['date'] + list(dataframe['Dates']),
-                                   'Within 6 Months': ['number'] + list(dataframe['Within 6 Months']),
-                                   'Within 12 Months': ['number'] + list(dataframe['Within 12 Months']),
-                                   'Within 24 Months': ['number'] + list(dataframe['Within 24 Months']),
-                                   'Recession': ['number'] + list(dataframe['Recession'])
-                                   })
-        chart_data.to_csv(path.deployment_chart_data, index=False)
-    
+
     
     def plot_test_results(self):
         """

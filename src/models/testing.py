@@ -19,7 +19,6 @@ class CrossValidate:
     Methods and attributes for cross-validation.
     """
     
-    
     def __init__(self):
         self.cv_params = {}
         self.test_name = ''
@@ -30,8 +29,7 @@ class CrossValidate:
         self.optimal_params_by_output = {}
         self.cv_metadata_by_output = {}
         self.cv_predictions_by_output = {}
-        
-        
+
     def walk_forward_cv(self):
         """
         Runs walk-forward cross-validation, and saves cross-validation
@@ -42,42 +40,6 @@ class CrossValidate:
             optimal_params_by_model = {}
             cv_metadata_by_model = {}
             cv_predictions_by_model = {}
-            
-            print('\t\t\t\t|--KNN Model')
-            knn = KNN()
-            knn.cv_params = self.cv_params
-            knn.test_name = self.test_name
-            knn.full_df = self.full_df
-            knn.feature_names = self.feature_names
-            knn.output_name = output_name
-            knn.run_knn_cv()
-            optimal_params_by_model['KNN'] = knn.knn_optimal_params
-            cv_predictions_by_model['KNN'] = knn.knn_cv_predictions
-            
-            print('\t\t\t\t|--Elastic Net Model')
-            elastic_net = ElasticNet()
-            elastic_net.cv_params = self.cv_params
-            elastic_net.test_name = self.test_name
-            elastic_net.full_df = self.full_df
-            elastic_net.feature_names = self.feature_names
-            elastic_net.feature_dict = self.feature_dict
-            elastic_net.output_name = output_name
-            elastic_net.run_elastic_net_cv()
-            optimal_params_by_model['Elastic_Net'] = elastic_net.elastic_net_optimal_params
-            cv_metadata_by_model['Elastic_Net'] = elastic_net.metadata
-            cv_predictions_by_model['Elastic_Net'] = elastic_net.elastic_net_cv_predictions
-            
-            print('\t\t\t\t|--Naive Bayes Model')
-            naive_bayes = NaiveBayes()
-            naive_bayes.cv_params = self.cv_params
-            naive_bayes.test_name = self.test_name
-            naive_bayes.full_df = self.full_df
-            naive_bayes.feature_names = self.feature_names
-            naive_bayes.feature_dict = self.feature_dict
-            naive_bayes.output_name = output_name
-            naive_bayes.run_bayes_cv()
-            cv_predictions_by_model['Naive_Bayes'] = naive_bayes.bayes_cv_predictions
-            optimal_params_by_model['Naive_Bayes'] = naive_bayes.bayes_optimal_params
             
             print('\t\t\t\t|--SVM Model')
             svm = SupportVectorMachine()
@@ -91,35 +53,8 @@ class CrossValidate:
             cv_metadata_by_model['SVM'] = svm.metadata
             cv_predictions_by_model['SVM'] = svm.svm_cv_predictions
             
-            print('\t\t\t\t|--Gaussian Process Model')
-            gauss = GaussianProcess()
-            gauss.cv_params = self.cv_params
-            gauss.test_name = self.test_name
-            gauss.full_df = self.full_df
-            gauss.feature_names = self.feature_names
-            gauss.feature_dict = self.feature_dict
-            gauss.output_name = output_name
-            gauss.run_gauss_cv()
-            cv_predictions_by_model['Gaussian_Process'] = gauss.gauss_cv_predictions
-            cv_metadata_by_model['Gaussian_Process'] = gauss.metadata
-            optimal_params_by_model['Gaussian_Process'] = gauss.gauss_optimal_params
-            
-            print('\t\t\t\t|--XGBoost Model')
-            xgboost = XGBoost()
-            xgboost.cv_params = self.cv_params
-            xgboost.test_name = self.test_name
-            xgboost.full_df = self.full_df
-            xgboost.feature_names = self.feature_names
-            xgboost.feature_dict = self.feature_dict
-            xgboost.output_name = output_name
-            xgboost.run_xgboost_cv()
-            optimal_params_by_model['XGBoost'] = xgboost.xgboost_optimal_params
-            cv_metadata_by_model['XGBoost'] = xgboost.metadata
-            cv_predictions_by_model['XGBoost'] = xgboost.xgboost_cv_predictions
-            
-            self.optimal_params_by_output[output_name] = optimal_params_by_model
-            self.cv_metadata_by_output[output_name] = cv_metadata_by_model
-            self.cv_predictions_by_output[output_name] = cv_predictions_by_model
+            print('\t\t\t\t|--Neural Network Model')
+            # todo: add NN model here
 
 
 class Predict:
@@ -148,15 +83,14 @@ class Predict:
         """
         Gets indices for rows to be used during prediction.
         """
-        if self.full_df['Dates'][0] > self.full_df['Dates'][len(self.full_df) - 1]:
+        if self.full_df['date'][0] > self.full_df['date'][len(self.full_df) - 1]:
             self.full_df = self.full_df[::-1]
         self.full_df.reset_index(inplace=True)
         self.full_df.drop('index', axis=1, inplace=True)
-        date_condition = ((self.full_df['Dates'] <= self.pred_end) &
-                          (self.full_df['Dates'] >= self.pred_start))
+        date_condition = ((self.full_df['date'] <= self.pred_end) &
+                          (self.full_df['date'] >= self.pred_start))
         self.pred_indices = list(self.full_df[date_condition].index)
-        
-        
+
     def walk_forward_prediction(self):
         """
         Runs walk-forward prediction, and saves prediction metrics.
@@ -166,40 +100,6 @@ class Predict:
             prediction_errors_by_model = {}
             predictions_by_model = {}
             pred_metadata_by_model = {}
-            
-            print('\t\t\t\t|--KNN Model')
-            knn = KNN()
-            knn.pred_indices = self.pred_indices
-            knn.full_df = self.full_df
-            knn.feature_names = self.feature_names
-            knn.output_name = output_name
-            knn.knn_optimal_params = self.optimal_params_by_output[output_name]['KNN']
-            knn.run_knn_prediction()
-            prediction_errors_by_model['KNN'] = knn.knn_pred_error
-            predictions_by_model['KNN'] = knn.knn_predictions
-            
-            print('\t\t\t\t|--Elastic Net Model')
-            elastic_net = ElasticNet()
-            elastic_net.pred_indices = self.pred_indices
-            elastic_net.full_df = self.full_df
-            elastic_net.feature_names = self.feature_names
-            elastic_net.feature_dict = self.feature_dict
-            elastic_net.output_name = output_name
-            elastic_net.elastic_net_optimal_params = self.optimal_params_by_output[output_name]['Elastic_Net']
-            elastic_net.run_elastic_net_prediction()
-            prediction_errors_by_model['Elastic_Net'] = elastic_net.elastic_net_pred_error
-            predictions_by_model['Elastic_Net'] = elastic_net.elastic_net_predictions
-            pred_metadata_by_model['Elastic_Net'] = elastic_net.metadata
-            
-            print('\t\t\t\t|--Naive Bayes Model')
-            naive_bayes = NaiveBayes()
-            naive_bayes.pred_indices = self.pred_indices
-            naive_bayes.full_df = self.full_df
-            naive_bayes.feature_names = self.feature_names
-            naive_bayes.output_name = output_name
-            naive_bayes.run_bayes_prediction()
-            prediction_errors_by_model['Naive_Bayes'] = naive_bayes.bayes_pred_error
-            predictions_by_model['Naive_Bayes'] = naive_bayes.bayes_predictions
             
             print('\t\t\t\t|--SVM Model')
             svm = SupportVectorMachine()
@@ -212,44 +112,6 @@ class Predict:
             prediction_errors_by_model['SVM'] = svm.svm_pred_error
             predictions_by_model['SVM'] = svm.svm_predictions
             pred_metadata_by_model['SVM'] = svm.metadata
-            
-            print('\t\t\t\t|--Gaussian Process Model')
-            gauss = GaussianProcess()
-            gauss.pred_indices = self.pred_indices
-            gauss.full_df = self.full_df
-            gauss.feature_names = self.feature_names
-            gauss.output_name = output_name
-            gauss.run_gauss_prediction()
-            prediction_errors_by_model['Gaussian_Process'] = gauss.gauss_pred_error
-            predictions_by_model['Gaussian_Process'] = gauss.gauss_predictions
-            pred_metadata_by_model['Gaussian_Process'] = gauss.metadata
-            
-            print('\t\t\t\t|--XGBoost Model')
-            xgboost = XGBoost()
-            xgboost.pred_indices = self.pred_indices
-            xgboost.full_df = self.full_df
-            xgboost.feature_names = self.feature_names
-            xgboost.feature_dict = self.feature_dict
-            xgboost.output_name = output_name
-            xgboost.xgboost_optimal_params = self.optimal_params_by_output[output_name]['XGBoost']
-            xgboost.run_xgboost_prediction()
-            prediction_errors_by_model['XGBoost'] = xgboost.xgboost_pred_error
-            predictions_by_model['XGBoost'] = xgboost.xgboost_predictions
-            pred_metadata_by_model['XGBoost'] = xgboost.metadata
-            
-            print('\t\t\t\t|--Weighted Average Model')
-            weighted_average = WeightedAverage()
-            weighted_average.model_names = self.model_names
-            weighted_average.cv_results = self.optimal_params_by_output[output_name]
-            weighted_average.predictions_by_model = predictions_by_model
-            weighted_average.run_weighted_average_prediction()
-            predictions_by_model['Weighted_Average'] = weighted_average.weighted_average_predictions
-            pred_metadata_by_model['Weighted_Average'] = weighted_average.metadata
-            
-            self.prediction_errors_by_output[output_name] = prediction_errors_by_model
-            self.predictions_by_output[output_name] = predictions_by_model
-            self.pred_metadata_by_output[output_name] = pred_metadata_by_model
-        
         
     def run_prediction(self):
         """
@@ -264,8 +126,7 @@ class Backtester:
     """
     The manager class for this module.
     """
-    
-    
+
     def __init__(self):
         """
         feature_names: names of features to include in backtest
@@ -401,7 +262,7 @@ class Backtester:
         pred_24mo = []
         for test in self.full_predictions:
             test_data = self.full_predictions[test]
-            dates.extend(test_data[self.output_names[0]][model_name]['Dates'])
+            dates.extend(test_data[self.output_names[0]][model_name]['date'])
             true_0mo.extend(test_data[self.output_names[0]][model_name]['True'])
             true_6mo.extend(test_data[self.output_names[1]][model_name]['True'])
             pred_6mo.extend(test_data[self.output_names[1]][model_name]['Predicted'])
@@ -411,7 +272,7 @@ class Backtester:
             pred_24mo.extend(test_data[self.output_names[3]][model_name]['Predicted'])
                 
         results = pd.DataFrame()   
-        results['Dates'] = dates
+        results['date'] = dates
         results['True_{}'.format(self.output_names[0])] = true_0mo
         results['True_{}'.format(self.output_names[1])] = true_6mo
         results['Pred_{}'.format(self.output_names[1])] = pred_6mo

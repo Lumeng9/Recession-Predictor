@@ -11,7 +11,6 @@ class SupportVectorMachine:
     Methods and attributes to run an Elastic Net model.
     """
 
-    
     def __init__(self):
         """
         C_range: range of of C values to use during grid-search
@@ -37,13 +36,13 @@ class SupportVectorMachine:
         self.optimal_C = -1
         self.optimal_gamma = -1
         self.best_cv_score = 100000
-        self.C_range = [0.0001, 0.00025, 0.0005, 0.00075, 0.001, 0.0025, 0.005,
-                        0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75,
-                        1.0, 2.5, 5.0, 7.5, 10.0]
+        # self.C_range = [0.0001, 0.00025, 0.0005, 0.00075, 0.001, 0.0025, 0.005,
+        #                 0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75,
+        #                 1.0, 2.5, 5.0, 7.5, 10.0]
+        self.C_range = [1]
         self.gamma_range = []
         self.metadata = {}
         self.support_vector_count_as_percent = -1
-
 
     def calculate_log_loss_weights(self):
         """
@@ -63,19 +62,15 @@ class SupportVectorMachine:
         for sample in self.testing_y:
             self.log_loss_weights.append(class_weights[str(sample)])
 
-
     def get_cv_indices(self):
         """
         Gets indices for rows to be used during cross-validation.
         """
-        if self.full_df['Dates'][0] > self.full_df['Dates'][len(self.full_df) - 1]:
+        if self.full_df['date'][0] > self.full_df['date'][len(self.full_df) - 1]:
             self.full_df = self.full_df[::-1]
-        self.full_df.reset_index(inplace=True)
-        self.full_df.drop('index', axis=1, inplace=True)
-        date_condition = ((self.full_df['Dates'] <= self.cv_end) &
-                          (self.full_df['Dates'] >= self.cv_start))
+        date_condition = ((self.full_df['date'] <= self.cv_end) &
+                          (self.full_df['date'] >= self.cv_start))
         self.cv_indices = list(self.full_df[date_condition].index)
-
 
     def run_svm_cv(self):
         """
@@ -85,13 +80,12 @@ class SupportVectorMachine:
         
         default_gamma = 1 / len(self.feature_names)
         self.gamma_range = [multiplier * default_gamma
-                            for multiplier in [0.25, 0.50, 0.75, 1.0, 1.25,
-                                               1.50, 1.75, 2.00]]
+                            for multiplier in [0.25]]
         for C in self.C_range:
             for gamma in self.gamma_range:
                 all_predicted_probs = pd.DataFrame()
                 all_testing_y = pd.Series()
-                dates = []
+                dates = list()
                 self.log_loss_weights = []
                 for test_name in range(1, self.test_name + 1):
                     self.cv_start = self.cv_params[test_name]['cv_start']
@@ -118,7 +112,8 @@ class SupportVectorMachine:
                     all_predicted_probs = all_predicted_probs.append(predicted_probs,
                                                                      ignore_index=True)
                     all_testing_y = all_testing_y.append(self.testing_y)
-                    dates.extend(self.full_df['Dates'].loc[self.cv_indices])
+                    date_to_append = self.full_df['date'].loc[self.cv_indices].tolist()
+                    dates = dates.append(date_to_append)
                         
                 log_loss_score = log_loss(y_true=all_testing_y,
                                           y_pred=all_predicted_probs,
@@ -128,7 +123,8 @@ class SupportVectorMachine:
                     self.optimal_C = C
                     self.optimal_gamma = gamma
                     self.support_vector_count_as_percent = round(svm_count, 3)
-                    self.svm_cv_predictions['Dates'] = dates
+
+                    self.svm_cv_predictions['date'] = dates
                     self.svm_cv_predictions['True'] = all_testing_y.to_list()
                     self.svm_cv_predictions['Predicted'] = all_predicted_probs[1].to_list()
             
@@ -157,7 +153,7 @@ class SupportVectorMachine:
         scaler.fit(training_x)
         training_x_scaled = scaler.transform(training_x)
         svm = SVC(C=self.optimal_C, kernel='rbf', gamma=self.optimal_gamma,
-                  probability=True, tol=1e-3, random_state=123,
+                  probability=True, tol=1e-3, random_state=42,
                   class_weight='balanced')
         svm.fit(X=training_x_scaled, y=self.training_y)
         self.support_vector_count_as_percent = len(svm.support_) / len(training_x_scaled)
@@ -169,9 +165,9 @@ class SupportVectorMachine:
         all_predicted_probs = all_predicted_probs.append(predicted_probs,
                                                          ignore_index=True)
         all_testing_y = all_testing_y.append(self.testing_y)
-        dates.extend(self.full_df['Dates'].loc[self.pred_indices])
-            
-        self.svm_predictions['Dates'] = dates
+        dates.extend(self.full_df['date'].loc[self.pred_indices])
+        dates_out = list(map(lambda x: str(x), dates))
+        self.svm_predictions['date'] = dates_out
         self.svm_predictions['True'] = all_testing_y.to_list()
         self.svm_predictions['Predicted'] = all_predicted_probs[1].to_list()
         self.metadata['SV Count %'] = round(self.support_vector_count_as_percent, 3)

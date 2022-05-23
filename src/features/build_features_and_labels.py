@@ -43,12 +43,17 @@ class FinalizeDataset:
             begin_condition = (self.final_df_output.index
                 >= NBER_recessions[recession]['Begin'])
             self.final_df_output.loc[end_condition & begin_condition, 'Recession'] = 1
-        
+
+        # take date index as a column
+        self.final_df_output = self.final_df_output.reset_index()
+        self.final_df_output = self.final_df_output.rename(columns={'index': 'date'})
+
         for index in range(0, len(self.final_df_output)):
             if self.final_df_output['Recession'][index] == 1:
-                self.final_df_output.loc[min(index + 12, len(self.final_df_output) - 1),
+                # 253 trading days per year
+                self.final_df_output.loc[min(index + 253, len(self.final_df_output) - 1),
                                          'Recession_in_12mo'] = 1
-                self.final_df_output.loc[index:min(index + 12, len(self.final_df_output) - 1),
+                self.final_df_output.loc[index:min(index + 253, len(self.final_df_output) - 1),
                                          'Recession_within_12mo'] = 1
 
     def create_final_dataset(self):
@@ -60,12 +65,13 @@ class FinalizeDataset:
         self.final_df_output = self.input_data
         self.label_output()
         new_cols = ['Recession', 'Recession_in_12mo',
-                    'Recession_within_12mo', '10Y_Treasury_Rate']
+                    'Recession_within_12mo', '10Y_Treasury_Rate', 'date']
         self.final_df_output = self.final_df_output[new_cols]
         print('Finished creating final dataset!')
-        print('\t|--Saving final dataset to {}'.format(path.data_final))
-        self.final_df_output.csv(path.data_final)
-        print('\nFinal dataset saved to {}'.format(path.data_final))
+        return self.final_df_output
+        # print('\t|--Saving final dataset to {}'.format(path.data_final))
+        # self.final_df_output.to_csv(path.data_final, index=False)
+        # print('\nFinal dataset saved to {}'.format(path.data_final))
         
         
 #MIT License

@@ -14,7 +14,6 @@ class CrossValidate:
     Methods and attributes for cross-validation.
     """
     
-    
     def __init__(self):
         self.cv_params = {}
         self.test_name = ''
@@ -80,12 +79,12 @@ class Predict:
         """
         Gets indices for rows to be used during prediction.
         """
-        if self.full_df['Dates'][0] > self.full_df['Dates'][len(self.full_df) - 1]:
+        if self.full_df['date'][0] > self.full_df['date'][len(self.full_df) - 1]:
             self.full_df = self.full_df[::-1]
         self.full_df.reset_index(inplace=True)
         self.full_df.drop('index', axis=1, inplace=True)
-        date_condition = ((self.full_df['Dates'] <= self.pred_end) &
-                          (self.full_df['Dates'] >= self.pred_start))
+        date_condition = ((self.full_df['date'] <= self.pred_end) &
+                          (self.full_df['date'] >= self.pred_start))
         self.pred_indices = list(self.full_df[date_condition].index)
         
         
@@ -122,38 +121,22 @@ class Predict:
         self.walk_forward_prediction()
 
 
-
 class Deployer:
     """
     The manager class for this module.
     """
     
-    
-    def __init__(self):
-        self.final_df_output = pd.DataFrame()
+    def __init__(self, df):
+        self.final_df_output = df
         self.testing_dates = {}
         self.optimal_params = {}
         self.cv_model_metadata = {}
         self.pred_model_metadata = {}
         self.full_predictions = {}
-        self.feature_names = ['Payrolls_3mo_vs_12mo',
-                              'Real_Fed_Funds_Rate_12mo_chg',
-                              'CPI_3mo_pct_chg_annualized',
-                              '10Y_Treasury_Rate_12mo_chg',
-                              '3M_10Y_Treasury_Spread',
-                              'S&P_500_12mo_chg']
-        self.feature_dict = {0: 'Payrolls_3mo_vs_12mo',
-                             1: 'Real_Fed_Funds_Rate_12mo_chg',
-                             2: 'CPI_3mo_pct_chg_annualized',
-                             3: '10Y_Treasury_Rate_12mo_chg',
-                             4: '3M_10Y_Treasury_Spread',
-                             5: 'S&P_500_12mo_chg'}
-        self.output_names = ['Recession',
-                             'Recession_within_6mo',
-                             'Recession_within_12mo',
-                             'Recession_within_24mo']
+        self.feature_names = ['10Y_Treasury_Rate']
+        self.feature_dict = {0: '10Y_Treasury_Rate'}
+        self.output_names = ['Recession_in_12mo']
 
-    
     def fill_testing_dates(self):
         """
         Stores testing dates, for each test number.
@@ -163,31 +146,7 @@ class Deployer:
         month = now.strftime('%m')
         year = now.year        
         most_recent_date = '{}-{}-01'.format(year, month)
-        self.testing_dates[1] = {'cv_start': '1972-01-01', 
-                                 'cv_end': '1975-12-01', 
-                                 'pred_start': '1976-01-01',
-                                 'pred_end': '1981-07-01'}
-        self.testing_dates[2] = {'cv_start': '1976-01-01', 
-                                 'cv_end': '1981-07-01', 
-                                 'pred_start': '1981-08-01',
-                                 'pred_end': '1983-07-01'}
-        self.testing_dates[3] = {'cv_start': '1976-01-01', 
-                                 'cv_end': '1983-07-01', 
-                                 'pred_start': '1983-08-01',
-                                 'pred_end': '1992-12-01'}
-        self.testing_dates[4] = {'cv_start': '1983-08-01', 
-                                 'cv_end': '1992-12-01', 
-                                 'pred_start': '1993-01-01',
-                                 'pred_end': '2003-07-01'}
-        self.testing_dates[5] = {'cv_start': '1993-01-01', 
-                                 'cv_end': '2003-07-01', 
-                                 'pred_start': '2003-08-01',
-                                 'pred_end': '2010-09-01'}
-        self.testing_dates[6] = {'cv_start': '2003-08-01', 
-                                 'cv_end': '2010-09-01', 
-                                 'pred_start': '2010-10-01',
-                                 'pred_end': '2021-07-01'}
-        self.testing_dates[7] = {'cv_start': '2010-10-01', 
+        self.testing_dates[1] = {'cv_start': '2010-10-01',
                                  'cv_end': '2021-07-01', 
                                  'pred_start': '2021-08-01',
                                  'pred_end': most_recent_date}
@@ -247,35 +206,23 @@ class Deployer:
         """
         dates = []
         true_0mo = []
-        true_6mo = []
-        pred_6mo = []
         true_12mo = []
         pred_12mo = []
-        true_24mo = []
-        pred_24mo = []
+
         for test in self.full_predictions:
             test_data = self.full_predictions[test]
-            dates.extend(test_data[self.output_names[0]][model_name]['Dates'])
+            dates.extend(test_data[self.output_names[0]][model_name]['date'])
             true_0mo.extend(test_data[self.output_names[0]][model_name]['True'])
-            true_6mo.extend(test_data[self.output_names[1]][model_name]['True'])
-            pred_6mo.extend(test_data[self.output_names[1]][model_name]['Predicted'])
-            true_12mo.extend(test_data[self.output_names[2]][model_name]['True'])
-            pred_12mo.extend(test_data[self.output_names[2]][model_name]['Predicted'])
-            true_24mo.extend(test_data[self.output_names[3]][model_name]['True'])
-            pred_24mo.extend(test_data[self.output_names[3]][model_name]['Predicted'])
+            true_12mo.extend(test_data[self.output_names[0]][model_name]['True'])
+            pred_12mo.extend(test_data[self.output_names[0]][model_name]['Predicted'])
                 
         results = pd.DataFrame()   
-        results['Dates'] = dates
+        results['date'] = dates
         results['True_{}'.format(self.output_names[0])] = true_0mo
-        results['True_{}'.format(self.output_names[1])] = true_6mo
-        results['Pred_{}'.format(self.output_names[1])] = pred_6mo
-        results['True_{}'.format(self.output_names[2])] = true_12mo
-        results['Pred_{}'.format(self.output_names[2])] = pred_12mo
-        results['True_{}'.format(self.output_names[3])] = true_24mo
-        results['Pred_{}'.format(self.output_names[3])] = pred_24mo
+        results['True_{}'.format(self.output_names[0])] = true_12mo
+        results['Pred_{}'.format(self.output_names[0])] = pred_12mo
         
-        return(results)
-            
+        return results
     
     def create_full_predictions_dataframe(self):
         """
@@ -286,15 +233,12 @@ class Deployer:
             self.full_predictions = json.load(file)
         self.read_full_predictions('SVM').to_json(path.deployment_svm_test_results)
         print('\t|--SVM results saved to {}'.format(path.deployment_svm_test_results))
-        
     
     def run_test_procedures(self):
         """
         Runs test procedures on final dataset.
         """
         print('\nDeploying prediction model...\n')
-        self.final_df_output = pd.read_json(path.data_final)
-        self.final_df_output.sort_index(inplace=True)
         self.fill_testing_dates()
         self.perform_backtests()
         self.create_full_predictions_dataframe()
